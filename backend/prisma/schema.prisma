@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  PATIENT
+}
+
+enum DeviceType {
+  ECG
+  BLOOD_PRESSURE
+  GLUCOSE
+}
+
+enum ReadingType {
+  ECG
+  BLOOD_PRESSURE
+  GLUCOSE
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  role         Role
+
+  patient      Patient?
+  createdReadings Reading[] @relation("ReadingCreatedBy")
+  auditLogs    AuditLog[] @relation("AuditActor")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Patient {
+  id          String    @id @default(cuid())
+  mrn         String    @unique
+  firstName   String
+  lastName    String
+  dateOfBirth DateTime?
+  gender      String?
+  phone       String?
+  email       String?
+  address     String?
+
+  userId      String?   @unique
+  user        User?     @relation(fields: [userId], references: [id])
+
+  devices     Device[]
+  readings    Reading[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([lastName, firstName])
+}
+
+model Device {
+  id        String     @id @default(cuid())
+  serial    String     @unique
+  type      DeviceType
+  status    String     @default("ASSIGNED")
+
+  patientId String
+  patient   Patient    @relation(fields: [patientId], references: [id])
+  readings  Reading[]
+  assignedAt DateTime  @default(now())
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([patientId, type])
+}
+
+model Reading {
+  id            String      @id @default(cuid())
+  type          ReadingType
+
+  patientId     String
+  patient       Patient     @relation(fields: [patientId], references: [id])
+
+  deviceId      String?
+  device        Device?     @relation(fields: [deviceId], references: [id])
+
+  recordedAt    DateTime
+  payload       Json
+
+  createdByUserId String?
+  createdByUser   User?     @relation("ReadingCreatedBy", fields: [createdByUserId], references: [id])
+
+  createdAt     DateTime    @default(now())
+
+  @@index([patientId, type, recordedAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actorUser   User?    @relation("AuditActor", fields: [actorUserId], references: [id])
+
+  action      String
+  entityType  String
+  entityId    String?
+  meta        Json?
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}

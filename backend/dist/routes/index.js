@@ -1,0 +1,20 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.apiRouter = void 0;
+const express_1 = require("express");
+const auth_1 = require("./auth");
+const patients_1 = require("./patients");
+const devices_1 = require("./devices");
+const readings_1 = require("./readings");
+const dashboard_1 = require("./dashboard");
+const auditLogs_1 = require("./auditLogs");
+exports.apiRouter = (0, express_1.Router)();
+exports.apiRouter.get("/health", (_req, res) => {
+    res.json({ ok: true });
+});
+exports.apiRouter.use("/auth", auth_1.authRouter);
+exports.apiRouter.use("/patients", patients_1.patientsRouter);
+exports.apiRouter.use("/devices", devices_1.devicesRouter);
+exports.apiRouter.use("/", readings_1.readingsRouter);
+exports.apiRouter.use("/dashboard", dashboard_1.dashboardRouter);
+exports.apiRouter.use("/audit-logs", auditLogs_1.auditLogsRouter);
